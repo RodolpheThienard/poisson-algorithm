@@ -3,10 +3,24 @@
 /* Numerical library developed to solve 1D    */ 
 /* Poisson problem (Heat equation)            */
 /**********************************************/
+#include "../include/lib_poisson1D.h"
 
 //
 void set_GB_operator_colMajor_poisson1D(f64* AB, i32 *lab, i32 *la, i32 *kv)
 {
+    // Init AB to 0
+    memset(AB, 0, (*lab)*(*lab));
+    i32 i = 0;
+    // Mid rows
+    for(; i < *la * *lab; i += *lab){
+        AB[ i + *kv + 0 ] = -1.0;
+        AB[ i + *kv + 1 ] = 2.0;
+        AB[ i + *kv + 2 ] = -1.0;
+    }
+
+    // Last row
+    AB[1] = 0.0;
+    AB[i - 1] = 0.0;
 }
 
 //
