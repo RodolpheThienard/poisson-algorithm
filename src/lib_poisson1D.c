@@ -3,26 +3,48 @@
 /* Numerical library developed to solve 1D    */ 
 /* Poisson problem (Heat equation)            */
 /**********************************************/
-#include "lib_poisson1D.h"
 
-void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
+//
+void set_GB_operator_colMajor_poisson1D(f64* AB, i32 *lab, i32 *la, i32 *kv)
+{
 }
 
-void set_GB_operator_colMajor_poisson1D_Id(double* AB, int *lab, int *la, int *kv){
+//
+void set_GB_operator_colMajor_poisson1D_Id(f64* AB, i32 *lab, i32 *la, i32 *kv)
+{
+
 }
 
-void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
+//
+void set_dense_RHS_DBC_1D(f64* RHS, i32* la, f64* BC0, f64* BC1)
+{
+    memset(RHS, 0, *la);
+    RHS[0] = *BC0;
+    RHS[*la - 1] = *BC1;
 }  
 
-void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
+//
+void set_analytical_solution_DBC_1D(f64* EX_SOL, f64* X, i32* la, f64* BC0, f64* BC1)
+{
+    for(i32 i = 0; i < *la; i++, EX_SOL++, X++){
+        *EX_SOL = *BC0 + *X * (*BC1 - *BC0);
+    }
 }  
 
-void set_grid_points_1D(double* x, int* la){
+//
+void set_grid_points_1D(f64* x, i32* la)
+{
+    f64 h = 1.0 / (*la - 1);
+    f64 foo = 0.0;
+    for(i32 i = 0; i < *la; i++, x++, foo += h)
+        *x = foo;
+    
 }
 
-void write_GB_operator_rowMajor_poisson1D(double* AB, int* lab, int* la, char* filename){
+
+void write_GB_operator_rowMajor_poisson1D(f64* AB, i32* lab, i32* la, ascii* filename){
   FILE * file;
-  int ii,jj;
+  i32 ii,jj;
   file = fopen(filename, "w");
   //Numbering from 1 to la
   if (file != NULL){
@@ -39,9 +61,9 @@ void write_GB_operator_rowMajor_poisson1D(double* AB, int* lab, int* la, char* f
   }
 }
 
-void write_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, char* filename){
+void write_GB_operator_colMajor_poisson1D(f64* AB, i32* lab, i32* la, ascii* filename){
   FILE * file;
-  int ii,jj;
+  i32 ii,jj;
   file = fopen(filename, "w");
   //Numbering from 1 to la
   if (file != NULL){
@@ -58,9 +80,9 @@ void write_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, char* f
   }
 }
 
-void write_GB2AIJ_operator_poisson1D(double* AB, int* la, char* filename){
+void write_GB2AIJ_operator_poisson1D(f64* AB, i32* la, ascii* filename){
   FILE * file;
-  int jj;
+  i32 jj;
   file = fopen(filename, "w");
   //Numbering from 1 to la
   if (file != NULL){
@@ -80,8 +102,8 @@ void write_GB2AIJ_operator_poisson1D(double* AB, int* la, char* filename){
   }
 }
 
-void write_vec(double* vec, int* la, char* filename){
-  int jj;
+void write_vec(f64* vec, i32* la, ascii* filename){
+  i32 jj;
   FILE * file;
   file = fopen(filename, "w");
   // Numbering from 1 to la
@@ -96,8 +118,8 @@ void write_vec(double* vec, int* la, char* filename){
   } 
 }  
 
-void write_xy(double* vec, double* x, int* la, char* filename){
-  int jj;
+void write_xy(f64* vec, f64* x, i32* la, ascii* filename){
+  i32 jj;
   FILE * file;
   file = fopen(filename, "w");
   // Numbering from 1 to la
@@ -112,9 +134,9 @@ void write_xy(double* vec, double* x, int* la, char* filename){
   } 
 }  
 
-int indexABCol(int i, int j, int *lab){
+i32 indexABCol(i32 i, i32 j, i32 *lab){
   return 0;
 }
-int dgbtrftridiag(int *la, int*n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
+i32 dgbtrftridiag(i32 *la, i32*n, i32 *kl, i32 *ku, f64 *AB, i32 *lab, i32 *ipiv, i32 *info){
   return *info;
 }
