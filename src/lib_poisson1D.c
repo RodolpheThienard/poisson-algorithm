@@ -9,7 +9,7 @@
 void set_GB_operator_colMajor_poisson1D(f64* AB, i32 *lab, i32 *la, i32 *kv)
 {
     // Init AB to 0
-    memset(AB, 0, (*lab)*(*lab));
+    memset(AB, 0, (*lab)*(*la));
     i32 i = 0;
     // Mid rows
     for(; i < *la * *lab; i += *lab){
@@ -26,7 +26,11 @@ void set_GB_operator_colMajor_poisson1D(f64* AB, i32 *lab, i32 *la, i32 *kv)
 //
 void set_GB_operator_colMajor_poisson1D_Id(f64* AB, i32 *lab, i32 *la, i32 *kv)
 {
+    u32 matrix_size = (*lab)*(*la);
+    memset(AB, 0, matrix_size);
 
+    for(i32 i = 0; i < matrix_size; i += *lab)
+        AB[i + (*kv) + 1] = 1.0;
 }
 
 //
