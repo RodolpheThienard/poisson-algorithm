@@ -156,5 +156,22 @@ i32 indexABCol(i32 i, i32 j, i32 *lab){
   return 0;
 }
 i32 dgbtrftridiag(i32 *la, i32*n, i32 *kl, i32 *ku, f64 *AB, i32 *lab, i32 *ipiv, i32 *info){
-  return *info;
+    for(u32 i = 1; i < *la; i++){
+
+        u32 a_1 = (*lab) * (i-1) + 1;
+        u32 a = (*lab) * (i) + 1;
+        u32 b_1 = (*lab) * (i-1) + 2;
+        u32 c_1 = (*lab) * (i);
+
+        ipiv[i-1] = i;
+
+        /* b(i-1) = b(i-1)/a(i-1) */
+        AB[(*kl) + b_1] /= AB[(*kl) + a_1];
+
+        /* a(i) = a(i) - b(i-1) / a(i-1) * c(i-1) */
+        AB[(*kl) + a] -= AB[(*kl) + b_1] * AB[(*kl) + c_1];
+
+    }
+    
+    return 0; // Value never used
 }
