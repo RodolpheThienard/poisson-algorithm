@@ -5,7 +5,10 @@
 /******************************************/
 #include "lib_poisson1D.h"
 #include "atlas_headers.h"
+#include <bits/time.h>
 #include <lapack.h>
+#include <string.h>
+#include <time.h>
 
 int main(int argc, char *argv[])
 /* ** argc: Nombre d'arguments */
@@ -27,13 +30,27 @@ int main(int argc, char *argv[])
 
     f64 temp, forward_error, backward_error;
 
+    struct timespec t1, t2;
+    f64 elapsed_dgbtrs, elapsed_dgbtrf, elapsed_dgbsv, elapsed_dgbtrftridiag;
+    
+    elapsed_dgbsv = 0.0;
+    elapsed_dgbtrs = 0.0;
+    elapsed_dgbtrf = 0.0;
+    elapsed_dgbtrftridiag = 0.0;
+
+    u32 array_size = 10;
+    if(argc > 1){
+        array_size = atoi(argv[1]);        
+    }
+    
     NRHS = 1;
-    nbpoints = 10;
+    nbpoints = array_size;
+//    printf("nb ptn : %d", nbpoints);
     la = nbpoints - 2;
     T0 = -5.0;
     T1 = 5.0;
 
-    printf("--------- Poisson 1D ---------\n\n");
+//    printf("--------- Poisson 1D ---------\n\n");
     RHS = (f64 *)malloc(sizeof(f64) * la);
     EX_SOL = (f64 *)malloc(sizeof(f64) * la);
     X = (f64 *)malloc(sizeof(f64) * la);
@@ -59,23 +76,35 @@ int main(int argc, char *argv[])
 
     set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
 
-    // write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "AB.dat");
+    write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "AB.dat");
 
-    printf("Solution with LAPACK\n");
+//    printf("Solution with LAPACK\n");
     /* LU Factorization */
+
+    f64 *ABB = (f64*)malloc(sizeof(f64)* lab * la);
+    set_GB_operator_colMajor_poisson1D(ABB, &lab, &la, &kv);
+               
     info = 0;
     ipiv = (i32 *)calloc(la, sizeof(i32));
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
     dgbtrf_(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
-
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+    elapsed_dgbtrf = (f64)(t2.tv_nsec - t1.tv_nsec);
     /* LU for tridiagonal matrix  (can replace dgbtrf_) */
-    // ierr= dgbtrftridiag(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+    ierr= dgbtrftridiag(&la, &la, &kl, &ku, ABB, &lab, ipiv, &info);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+    elapsed_dgbtrftridiag = (f64)(t2.tv_nsec - t1.tv_nsec);
 
-    // write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "LU.dat");
+    write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "LU.dat");
 
     /* Solution (Triangular) */
     if (info == 0)
     {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
         dgbtrs_("N", &la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+        elapsed_dgbtrs = (f64)(t2.tv_nsec - t1.tv_nsec);
         if (info != 0)
         {
             printf("\n INFO DGBTRS = %d\n", info);
@@ -88,7 +117,10 @@ int main(int argc, char *argv[])
 
     /* It can also be solved with dgbsv */
     // TODO : use dgbsv
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
     dgbsv_(&la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+    elapsed_dgbsv = (f64)(t2.tv_nsec - t1.tv_nsec);
 
     write_xy(RHS, X, &la, "SOL.dat");
 
@@ -119,12 +151,15 @@ int main(int argc, char *argv[])
     backward_error = tmp / cblas_dnrm2(la, RHS, 1);
 
 
-    printf("\nThe relative forward error is relres = %e\n", forward_error );
-    printf("\nThe relative backward error is relres = %e\n", backward_error );
-
+//    printf("\nThe relative forward error is relres = %e\n", forward_error );
+//    printf("\nThe relative backward error is relres = %e\n", backward_error );
+    printf("%d : dgbtrf : %f \n \
+            %d : dgbtrs : %f \n \
+            %d : dgbsv : %f\n \
+            %d : dgbtrftridiag : %f\n", nbpoints, elapsed_dgbtrf, nbpoints, elapsed_dgbtrs, nbpoints, elapsed_dgbsv, nbpoints, elapsed_dgbtrftridiag);
     free(RHS);
     free(EX_SOL);
     free(X);
     free(AB);
-    printf("\n\n--------- End -----------\n");
+//    printf("\n\n--------- End -----------\n");
 }
