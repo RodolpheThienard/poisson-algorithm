@@ -52,11 +52,10 @@ void set_analytical_solution_DBC_1D(f64* EX_SOL, f64* X, i32* la, f64* BC0, f64*
 //
 void set_grid_points_1D(f64* x, i32* la)
 {
-    f64 h = 1.0 / (*la - 1);
-    f64 foo = 0.0;
-    for(i32 i = 0; i < *la; i++, x++, foo += h)
-        *x = foo;
-    
+    i32 i;
+    f64 h = 1.0 / (1.0*(*la +1.0));
+    for(i = 0; i < (*la); i++)
+        x[i] = (i+1)*h;
 }
 
 
@@ -175,3 +174,41 @@ i32 dgbtrftridiag(i32 *la, i32*n, i32 *kl, i32 *ku, f64 *AB, i32 *lab, i32 *ipiv
     
     return 0; // Value never used
 }
+
+void eig_poisson1D(double* eigval, int *la){
+}
+
+double eigmax_poisson1D(int *la){
+  return 0;
+}
+
+double eigmin_poisson1D(int *la){
+  return 0;
+}
+
+double richardson_alpha_opt(int *la){
+  return 0;
+}
+
+void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, int *lab, int *la,int *ku, int*kl, double *tol, int *maxit, double *resvec, int *nbite){
+  /*
+    Algorithm richardson
+    rø=b-Axø
+    while ||r^k+1|| > epsilon
+      x^k+1 = x^k + M^-1(b-Ax^k)
+  */
+  
+}
+
+void extract_MB_jacobi_tridiag(double *AB, double *MB, int *lab, int *la,int *ku, int*kl, int *kv){
+
+}
+
+void extract_MB_gauss_seidel_tridiag(double *AB, double *MB, int *lab, int *la,int *ku, int*kl, int *kv){
+
+}
+
+void richardson_MB(double *AB, double *RHS, double *X, double *MB, int *lab, int *la,int *ku, int*kl, double *tol, int *maxit, double *resvec, int *nbite){
+
+}
+
