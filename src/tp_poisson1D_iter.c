@@ -5,42 +5,45 @@
 /******************************************/
 #include "lib_poisson1D.h"
 #include "atlas_headers.h"
+#include <bits/time.h>
+#include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char *argv[])
 /* ** argc: Number of arguments */
 /* ** argv: Values of arguments */
 {
-	int ierr;
-	int jj;
-	int nbpoints, la;
-	int ku, kl, lab, kv;
-	int *ipiv;
-	int info;
-	int NRHS;
-	double T0, T1;
-	double *RHS, *SOL, *EX_SOL, *X;
-	double *AB;
-	double *MB;
+	i32 ierr;
+	i32 jj;
+	i32 nbpoints, la;
+	i32 ku, kl, lab, kv;
+	i32 *ipiv;
+	i32 info;
+	i32 NRHS;
+	f64 T0, T1;
+	f64 *RHS, *SOL, *EX_SOL, *X;
+	f64 *AB;
+	f64 *MB;
 	f64 *tmp_vec;
-	double temp, relres;
+	f64 temp, relres;
 
-	double opt_alpha, forward_error;
+	f64 opt_alpha, forward_error;
 
 	/* Size of the problem */
 	NRHS = 1;
-	nbpoints = 12;
+	nbpoints = atoi(argv[1]);
 	la = nbpoints - 2;
 
 	/* Dirichlet Boundary conditions */
 	T0 = 5.0;
 	T1 = 20.0;
 
-	printf("--------- Poisson 1D ---------\n\n");
-	RHS = (double *)malloc(sizeof(double) * la);
-	SOL = (double *)calloc(la, sizeof(double));
-	EX_SOL = (double *)malloc(sizeof(double) * la);
-	X = (double *)malloc(sizeof(double) * la);
-	tmp_vec = malloc(sizeof(double) * la);
+	// printf("--------- Poisson 1D ---------\n\n");
+	RHS = (f64 *)malloc(sizeof(f64) * la);
+	SOL = (f64 *)calloc(la, sizeof(f64));
+	EX_SOL = (f64 *)malloc(sizeof(f64) * la);
+	X = (f64 *)malloc(sizeof(f64) * la);
+	tmp_vec = malloc(sizeof(f64) * la);
 	/* Setup the Poisson 1D problem */
 	/* General Band Storage */
 	set_grid_points_1D(X, &la);
@@ -56,7 +59,7 @@ int main(int argc, char *argv[])
 	kl = 1;
 	lab = kv + kl + ku + 1;
 
-	AB = (double *)malloc(sizeof(double) * lab * la);
+	AB = (f64 *)malloc(sizeof(f64) * lab * la);
 	set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
 
 	/* uncomment the following to check matrix A */
@@ -66,20 +69,27 @@ int main(int argc, char *argv[])
 	/* Solution (Richardson with optimal alpha) */
 
 	/* Computation of optimum alpha */
-	opt_alpha = richardson_alpha_opt(&la);
-	printf("Optimal alpha for simple Richardson iteration is : %lf",
-	       opt_alpha);
+	opt_alpha = atof(argv[2]); // richardson_alpha_opt(&la);
+	// printf("Optimal alpha for simple Richardson iteration is : %lf",
+	//        opt_alpha);
 
 	/* Solve */
-	double tol = 1e-3;
-	int maxit = 1000;
-	double *resvec;
-	int nbite = 0;
-
-	resvec = (double *)calloc(maxit, sizeof(double));
+	f64 tol = 1e-3;
+	i32 maxit = 1000;
+	f64 *resvec;
+	i32 nbite = 0;
+	struct timespec t1, t2;
+	f64 elapsed_alpha, elapsed_jacobi, elapsed_gauss;
+	i32 value = 1;
+	resvec = (f64 *)calloc(maxit, sizeof(f64));
 
 	/* Solve with Richardson alpha */
-	// richardson_alpha(AB, RHS, SOL, &opt_alpha, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+	richardson_alpha(AB, RHS, SOL, &opt_alpha, &lab, &la, &ku, &kl, &tol,
+			 &maxit, resvec, &nbite);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+	elapsed_alpha = (((f64)(t2.tv_sec - t1.tv_sec)) +
+			 (t2.tv_nsec - t1.tv_nsec) * 1e-9L);
 
 	/* Richardson General Tridiag */
 
@@ -87,15 +97,30 @@ int main(int argc, char *argv[])
 	kv = 1;
 	ku = 1;
 	kl = 1;
-	MB = (double *)malloc(sizeof(double) * (lab)*la);
-	// extract_MB_jacobi_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
-	// write_GB_operator_colMajor_poisson1D(MB, &lab, &la, "JACOBI.dat");
+	MB = (f64 *)malloc(sizeof(f64) * (lab)*la);
+	set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
 
-	// extract_MB_gauss_seidel_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
-	// write_GB_operator_colMajor_poisson1D(MB, &lab, &la, "GAUSS-SEIDEL.dat");
+	extract_MB_jacobi_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
+	write_GB_operator_colMajor_poisson1D(MB, &lab, &la, "JACOBI.dat");
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+	richardson_MB(AB, RHS, SOL, MB, &lab, &la, &ku, &kl, &tol, &maxit,
+		      resvec, &nbite);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+	elapsed_jacobi = (((f64)(t2.tv_sec - t1.tv_sec)) +
+			  (t2.tv_nsec - t1.tv_nsec) * 1e-9L);
+
+	set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
+	extract_MB_gauss_seidel_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
+	write_GB_operator_colMajor_poisson1D(MB, &lab, &la, "GAUSS-SEIDEL.dat");
 
 	/* Solve with General Richardson */
-	// richardson_MB(AB, RHS, SOL, MB, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+	richardson_MB(AB, RHS, SOL, MB, &lab, &la, &ku, &kl, &tol, &maxit,
+		      resvec, &nbite);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+	elapsed_gauss = (((f64)(t2.tv_sec - t1.tv_sec)) +
+			 (t2.tv_nsec - t1.tv_nsec) * 1e-9L);
 
 	/* Forward error :    ||x-xø|| / ||x|| */
 
@@ -109,12 +134,16 @@ int main(int argc, char *argv[])
 
 	forward_error = norm_x_xø / norm_x;
 
-	printf("\n%lf\n", forward_error);
+	// printf("\n%lf\n", forward_error);
 	/* Write solution */
 	write_vec(SOL, &la, "SOL.dat");
 
 	/* Write convergence history */
 	write_vec(resvec, &nbite, "RESVEC.dat");
+	printf("%lf : %lf\n", opt_alpha, elapsed_alpha);
+	// printf("%d : alpha : %lf\n \
+	// 				%d : jacobi: %lf\n \
+	// 				%d : gauss : %lf\n", nbpoints, elapsed_alpha, nbpoints, elapsed_jacobi, nbpoints, elapsed_gauss);
 
 	free(resvec);
 	free(RHS);
@@ -123,5 +152,4 @@ int main(int argc, char *argv[])
 	free(X);
 	free(AB);
 	free(MB);
-	printf("\n\n--------- End -----------\n");
-}
+} // printf("\n\n--------- End -----------\n");
